@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crop Selection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body class="bg-cover bg-center min-h-screen">
+    <div class="form-container">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800">Crop Selection System</h1>
+            <p class="text-lg text-gray-600 mt-2">Optimize your farming with intelligent crop recommendations</p>
+        </div>
+
+        <form id="cropForm" class="space-y-6">
+            <!-- Location Input -->
+            <div>
+                <label for="location" class="block text-lg font-medium text-gray-700">Location</label>
+                <input type="text" id="location" placeholder="Enter city name" 
+                       class="w-full p-3 mt-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                <p class="text-sm text-gray-500 mt-1">We'll auto-fill weather data based on your location</p>
+            </div>
+
+            <!-- Crop Selection -->
+            <div>
+                <label for="crop" class="block text-lg font-medium text-gray-700">Select Crop</label>
+                <select id="crop" class="w-full p-3 mt-2 border rounded-lg">
+                    <option value="">Select a crop</option>
+                    <option value="wheat">Wheat</option>
+                    <option value="rice">Rice</option>
+                    <option value="maize">Maize</option>
+                    <option value="barley">Barley</option>
+                    <option value="sugarcane">Sugarcane</option>
+                    <option value="cotton">Cotton</option>
+                    <option value="soybean">Soybean</option>
+                    <option value="coffee">Coffee</option>
+                    <option value="tea">Tea</option>
+                    <option value="sunflower">Sunflower</option>
+                    <option value="tomato">Tomato</option>
+                    <option value="potato">Potato</option>
+                    <option value="grapes">Grapes</option>
+                </select>
+            </div>
+
+            <!-- Soil pH Input -->
+            <div>
+                <label for="ph" class="block text-lg font-medium text-gray-700">Soil pH (1-14)</label>
+                <input type="number" id="ph" step="0.1" min="1" max="14" 
+                       class="w-full p-3 mt-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                       placeholder="Enter soil pH value">
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="w-full p-3 bg-blue-500 text-white font-bold rounded-lg">Analyze Crop Selection</button>
+        </form>
+
+        <!-- Weather Information -->
+        <div id="weatherInfo" class="hidden mt-6 space-y-2">
+            <p><strong>Temperature:</strong> <span id="temperature"></span>°C</p>
+            <p><strong>Humidity:</strong> <span id="humidity"></span>%</p>
+            <p><strong>Climate:</strong> <span id="climate"></span></p>
+        </div>
+
+        <!-- Popup for Crop Suggestions -->
+        <div id="popup" class="popup hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+            <div class="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+                <h3 class="text-xl font-bold mb-4">Crop Analysis Report</h3>
+                <div id="popupMessage" class="mb-4 space-y-2"></div>
+                <div id="recommendations" class="mb-4 space-y-2"></div>
+                <h4 class="font-semibold mt-4">Suggested Alternative Crops:</h4>
+                <ul id="alternativeCropsList" class="list-disc pl-5 mb-4"></ul>
+                <button type="button" onclick="closePopup()" 
+                        class="w-full mt-4 p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const apiKey = '0a4035f57245eeaaba238b1b350592ce';
+        const cropConstraints = {
+            wheat: { temp: [15, 25], humidity: [50, 70], ph: [6.0, 7.5] },
+            rice: { temp: [20, 35], humidity: [70, 90], ph: [5.0, 6.5] },
+            maize: { temp: [18, 30], humidity: [50, 70], ph: [5.8, 7.2] },
+            barley: { temp: [12, 25], humidity: [40, 60], ph: [6.0, 7.0] },
+            sugarcane: { temp: [20, 35], humidity: [60, 80], ph: [6.0, 7.5] },
+            cotton: { temp: [21, 37], humidity: [40, 60], ph: [5.5, 6.5] },
+            soybean: { temp: [20, 30], humidity: [50, 70], ph: [6.0, 7.0] },
+            coffee: { temp: [15, 24], humidity: [60, 80], ph: [6.0, 6.5] },
+            tea: { temp: [13, 30], humidity: [70, 90], ph: [4.5, 5.5] },
+            sunflower: { temp: [18, 30], humidity: [40, 60], ph: [6.0, 7.5] },
+            tomato: { temp: [18, 27], humidity: [60, 85], ph: [5.5, 6.8] },
+            potato: { temp: [15, 20], humidity: [60, 80], ph: [4.5, 6.0] },
+            grapes: { temp: [15, 35], humidity: [50, 70], ph: [5.5, 6.5] }
+        };
+
+        document.getElementById('cropForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const location = document.getElementById('location').value;
+            const crop = document.getElementById('crop').value;
+            const ph = parseFloat(document.getElementById('ph').value);
+
+            if (!location || !crop || !ph) {
+                alert("Please fill out all fields.");
+                return;
+            }
+
+            fetchWeatherData(location, crop, ph);
+        });
+
+        async function fetchWeatherData(location, crop, ph) {
+            try {
+                const response = await fetch(
+                    `https://api.openweathermap.org/data/2.5/weather?q=${location}&appid=${apiKey}&units=metric`
+                );
+                
+                if (!response.ok) throw new Error('Location not found');
+                
+                const data = await response.json();
+                const temperature = data.main.temp;
+                const humidity = data.main.humidity;
+                const climate = getClimateType(data);
+
+                // Display weather info
+                document.getElementById('temperature').textContent = temperature.toFixed(1);
+                document.getElementById('humidity').textContent = humidity;
+                document.getElementById('climate').textContent = climate;
+                document.getElementById('weatherInfo').classList.remove('hidden');
+
+                // Check crop suitability
+                checkCropSuitability(crop, temperature, humidity, ph, climate);
+
+            } catch (error) {
+                alert('Error fetching weather data: ' + error.message);
+            }
+        }
+
+        function getClimateType(weatherData) {
+            const temp = weatherData.main.temp;
+            const humidity = weatherData.main.humidity;
+            
+            if (temp > 25) {
+                return humidity > 60 ? 'Tropical' : 'Arid';
+            }
+            return temp < 10 ? 'Cold' : 'Temperate';
+        }
+
+        function checkCropSuitability(crop, temp, humidity, ph, climate) {
+            const constraints = cropConstraints[crop];
+            const issues = [];
+            const recommendations = [];
+            let isOptimal = true;
+
+            // Temperature check
+            if (temp < constraints.temp[0]) {
+                issues.push(`Low temperature (${temp}°C < minimum ${constraints.temp[0]}°C)`);
+                recommendations.push(`Consider using greenhouses or row covers`);
+                isOptimal = false;
+            } else if (temp > constraints.temp[1]) {
+                issues.push(`High temperature (${temp}°C > maximum ${constraints.temp[1]}°C)`);
+                recommendations.push(`Use shade nets or adjust planting time`);
+                isOptimal = false;
+            }
+
+            // Humidity check
+            if (humidity < constraints.humidity[0]) {
+                issues.push(`Low humidity (${humidity}% < minimum ${constraints.humidity[0]}%)`);
+                recommendations.push(`Install irrigation systems`);
+                isOptimal = false;
+            } else if (humidity > constraints.humidity[1]) {
+                issues.push(`High humidity (${humidity}% > maximum ${constraints.humidity[1]}%)`);
+                recommendations.push(`Improve ventilation and drainage`);
+                isOptimal = false;
+            }
+
+            // pH check
+            if (ph < constraints.ph[0]) {
+                issues.push(`Low pH (${ph} < minimum ${constraints.ph[0]})`);
+                recommendations.push(`Add lime to raise pH`);
+                isOptimal = false;
+            } else if (ph > constraints.ph[1]) {
+                issues.push(`High pH (${ph} > maximum ${constraints.ph[1]})`);
+                recommendations.push(`Add sulfur or organic matter to lower pH`);
+                isOptimal = false;
+            }
+
+            // Find alternative crops
+            const alternatives = Object.keys(cropConstraints).filter(c => {
+                const cConstraints = cropConstraints[c];
+                return temp >= cConstraints.temp[0] &&
+                       temp <= cConstraints.temp[1] &&
+                       humidity >= cConstraints.humidity[0] &&
+                       humidity <= cConstraints.humidity[1] &&
+                       ph >= cConstraints.ph[0] &&
+                       ph <= cConstraints.ph[1];
+            }).filter(c => c !== crop);
+
+            showResults(isOptimal, crop, issues, recommendations, alternatives);
+        }
+
+        function showResults(isOptimal, crop, issues, recommendations, alternatives) {
+            const popup = document.getElementById('popup');
+            const message = document.getElementById('popupMessage');
+            const recommendationsDiv = document.getElementById('recommendations');
+            const alternativesList = document.getElementById('alternativeCropsList');
+
+            popup.classList.remove('hidden');
+            message.innerHTML = isOptimal 
+                ? `<span class="text-green-600">✅ Excellent! ${crop} is well-suited for current conditions</span>`
+                : `<span class="text-red-600">⚠️ ${crop} may not be optimal:</span>`;
+
+            recommendationsDiv.innerHTML = '';
+            if (!isOptimal) {
+                recommendationsDiv.innerHTML = issues.map((issue, i) => 
+                    `<p class="text-sm">• ${issue} - ${recommendations[i]}</p>`
+                ).join('');
+            }
+
+            alternativesList.innerHTML = alternatives.map(crop => 
+                `<li class="text-sm">${crop.charAt(0).toUpperCase() + crop.slice(1)}</li>`
+            ).join('');
+
+            if (alternatives.length === 0) {
+                alternativesList.innerHTML = '<li class="text-sm">No alternatives found for current conditions</li>';
+            }
+        }
+
+        function closePopup() {
+            document.getElementById('popup').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,91 @@
+/* Center the form on the page */
+
+@import "tailwindcss/preflight";
+@tailwind utilities;
+/* @tailwind utilities; */
+
+
+.crop-selection-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background: url('/public/background.jpg') no-repeat center center fixed;
+    background-size: cover;
+    color: white;
+  }
+  
+  form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 10px;
+    width: 80%;
+    max-width: 500px;
+  }
+  
+  input,
+  select,
+  button {
+    margin: 10px 0;
+    padding: 10px;
+    width: 100%;
+    border-radius: 5px;
+  }
+  
+  button {
+    background-color: #47a3f3;
+    color: white;
+    cursor: pointer;
+  }
+  
+  button:hover {
+    background-color: #368cc9;
+  }
+  /* Background Image */
+  body {
+    background-image: url('./assets/bg-image.jpg');
+  }
+  
+  /* Form Container */
+  .form-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Recommendation Modal
+  .recommendation-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  
+  .recommendation-modal .modal-content {
+    background: white;
+    border-radius: 0.5rem;
+    padding: 2rem;
+    max-width: 500px;
+    width: 100%;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  } */
+   /* Add to src/styles.css */
+.accordion-content {
+  transition: max-height 0.3s ease-out;
+  overflow: hidden;
+  max-height: 0;
+}
+
+.accordion-content.expanded {
+  max-height: 500px;
+}
